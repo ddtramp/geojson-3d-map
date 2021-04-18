@@ -57,6 +57,7 @@ $.get('/assets/map/china.json', d => {
   // 绘制线条
   map.drawFlyLine(flyDatas);
 
+
 });
 
 console.log('ok~~~');

@@ -1,6 +1,8 @@
 import ThreeMap from './ThreeMap';
 import img1 from './assets/images/lightray.jpg';
 import img2 from './assets/images/lightray_yellow.jpg';
+import marker from './assets/images/marker.jpg';
+
 import throttle from 'lodash.throttle';
 
 const THREE = window.THREE;
@@ -32,7 +34,10 @@ export default class ThreeMapLightBar extends ThreeMap {
     let ratio = this.colorIndex / this.pointsLength;
 
     this.flyGroup &&
-      this.flyGroup.children.forEach(d => {
+      this.flyGroup.children.forEach((d, i) => {
+        // if (i === 0) {
+        //   d.dispose();
+        // }
         d.geometry.colors = new Array(this.pointsLength).fill(1).map((d, i) => {
           if (i !== this.colorIndex) {
             return new THREE.Color('#005fc4');
@@ -108,6 +113,8 @@ export default class ThreeMapLightBar extends ThreeMap {
   drawLightBar(data) {
     const group = new THREE.Group();
     const sixLineGroup = new THREE.Group();
+    const spriteGroup = new THREE.Group();
+
     data.forEach((d, i) => {
       const lnglat = this.dataKeys[d.name];
       const [x, y, z] = this.lnglatToMector(lnglat);
@@ -116,7 +123,7 @@ export default class ThreeMapLightBar extends ThreeMap {
       group.add(this.drawSixMesh(x, y, z, i));
       // 绘制6边线
       sixLineGroup.add(this.drawSixLineLoop(x, y, z, i));
-
+        spriteGroup.add(this.drawSprite(x, y, z));
       // 绘制柱子
       const [plane1, plane2] = this.drawPlane(x, y, z, d.value, i);
       group.add(plane2);
@@ -126,6 +133,8 @@ export default class ThreeMapLightBar extends ThreeMap {
     this.sixLineGroup = sixLineGroup;
     this.scene.add(group);
     this.scene.add(sixLineGroup);
+    this.scene.add(spriteGroup);
+
   }
 
   /**
@@ -158,5 +167,17 @@ export default class ThreeMapLightBar extends ThreeMap {
     });
     this.flyGroup = group;
     this.scene.add(group);
+  }
+
+  drawSprite(x, y, z) {
+    const map = new THREE.TextureLoader().load( marker );
+    const material = new THREE.SpriteMaterial( { map: map } );
+
+    const sprite = new THREE.Sprite( material );
+
+    sprite.position.set(x, y, z + 0.6);
+
+    return sprite;
+
   }
 }

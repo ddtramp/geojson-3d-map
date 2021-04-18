@@ -15,20 +15,23 @@ export default class ThreeMap {
    */
   init() {
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(10, window.innerWidth / window.innerHeight, 1, 1000);
+    this.camera = new THREE.PerspectiveCamera(10, window.innerWidth / window.innerHeight, 1, 2000);
 
-    this.setCamera({ x: 100, y: 0, z: 100 });
+    this.setCamera({ x: 150, y: 0, z: 150 });
     this.setLight();
     this.setRender();
 
     this.setHelper();
 
-    this.drawMap();
+    this.loadFont(() => {
+      this.drawMap();
+    });
+
 
     this.setControl();
     this.animate();
 
-    document.body.addEventListener('click', this.mouseEvent.bind(this));
+    document.body.addEventListener('click', this.mouseEvent.bind(this), { passive: false });
   }
 
   /**
@@ -102,6 +105,7 @@ export default class ThreeMap {
     // 把经纬度转换成x,y,z 坐标
     this.mapData.features.forEach(d => {
       d.vector3 = [];
+      d.properties.vector3 = this.lnglatToMector(d.properties.cp);
       d.geometry.coordinates.forEach((coordinates, i) => {
         d.vector3[i] = [];
         coordinates.forEach((c, j) => {
@@ -124,8 +128,11 @@ export default class ThreeMap {
     // 绘制地图模型
     const group = new THREE.Group();
     const lineGroup = new THREE.Group();
+    const textGroup = new THREE.Group();
+
     this.mapData.features.forEach(d => {
       const g = new THREE.Group(); // 用于存放每个地图模块。||省份
+      const text = this.createText(d.properties.name, d.properties.vector3);
       g.data = d;
       d.vector3.forEach(points => {
         // 多个面
@@ -145,6 +152,7 @@ export default class ThreeMap {
         }
       });
       group.add(g);
+      textGroup.add(text);
     });
     this.group = group; // 丢到全局去
     const lineGroupBottom = lineGroup.clone();
@@ -152,6 +160,8 @@ export default class ThreeMap {
     this.scene.add(lineGroup);
     this.scene.add(lineGroupBottom);
     this.scene.add(group);
+    this.scene.add(textGroup);
+
   }
 
   /**
@@ -222,6 +232,52 @@ export default class ThreeMap {
     return [x, y, z];
   }
 
+
+  loadFont(callback = () => {}) { //加载中文字体
+    var loader = new THREE.FontLoader();
+    var _this = this;
+    loader.load('./assets/fonts/chinese.json', function (response) {
+      _this.font = response;
+      callback && callback();
+    });
+
+  }
+
+
+  createText(name, position) {
+
+    const matLite = new THREE.MeshBasicMaterial( {
+      color: 0x006699,
+      transparent: true,
+      opacity: 0.4,
+      side: THREE.DoubleSide
+    } );
+
+    const shapes = this.font.generateShapes( name, 100 );
+
+    const geometry = new THREE.ShapeGeometry( shapes );
+
+    geometry.computeBoundingBox();
+
+    const xMid = - 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x );
+
+    geometry.translate( xMid, 0, 0 );
+    // make shape ( N.B. edge view not visible )
+
+    const text = new THREE.Mesh( geometry, matLite );
+    const [x, y, z] = position;
+    text.position.set(x, y, z + 0.1);
+    text.rotation.x = 0;
+    text.rotation.y = 0;
+    text.rotation.z = Math.PI / 2;
+
+    
+    const SCALE_SIZE = 0.006;
+    text.scale.set(SCALE_SIZE, SCALE_SIZE, SCALE_SIZE);
+
+    return text;
+  }
+  
   /**
    * @desc 动画
    */
@@ -268,7 +324,7 @@ export default class ThreeMap {
    * @desc 设置渲染器
    */
   setRender() {
-    this.renderer = new THREE.WebGLRenderer();
+    this.renderer = new THREE.WebGLRenderer({antialias: true});
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(this.renderer.domElement);
   }

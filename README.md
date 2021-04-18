@@ -17,3 +17,6 @@ src/ # 源代码目录
 > http://localhost:9000 # 访问
 
 
+## Notice
+
+注意图标使用 sprite
